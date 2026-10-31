@@ -1,0 +1,7 @@
+# Python
+__pycache__/
+*.pyc
+
+# 用户情绪状态文件（含真实心情数据，永不入库）
+emotion_state.json
+*.json.lock

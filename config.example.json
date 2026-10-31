@@ -1,0 +1,24 @@
+{
+  "baseline": {
+    "pleasure": 0.0,
+    "arousal": 0.0,
+    "dominance": 0.0,
+    "possessiveness": 0.30,
+    "intimacy": 0.30,
+    "attachment": 0.30
+  },
+  "lambda": {
+    "pleasure": 0.12,
+    "arousal": 1.4,
+    "dominance": 0.004,
+    "possessiveness": 0.03,
+    "trust": 0.0,
+    "intimacy": 0.005,
+    "attachment": 0.005
+  },
+  "rules": [
+    [["爱你", "想你"], {"pleasure": 0.3, "arousal": 0.1, "intimacy": 0.04, "attachment": 0.04}],
+    [["在吗", "还在吗"], {"pleasure": 0.05, "attachment": 0.04, "trust": {"presence": 0.03}}],
+    [["忙", "没空"], {"pleasure": -0.1, "possessiveness": 0.15, "attachment": 0.03}]
+  ]
+}
