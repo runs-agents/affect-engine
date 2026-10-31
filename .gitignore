@@ -5,3 +5,6 @@ __pycache__/
 # 用户情绪状态文件（含真实心情数据，永不入库）
 emotion_state.json
 *.json.lock
+
+# 用户人格配置（规则表/底色/衰减——你的伴侣的性格，不入库）
+emotion_config.json

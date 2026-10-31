@@ -15,7 +15,7 @@ Most "emotion" layers for LLM agents are a sentiment classifier bolted onto the 
 | `pleasure` / `arousal` / `dominance` | −1..1 | The PAD model (Mehrabian) |
 | `possessiveness` | 0..1 | How tightly the companion holds on |
 | `intimacy` / `attachment` | 0..1 | Relationship axes — slow-moving, hard to earn |
-| `trust.presence` / `trust.safety` | 0..1 | Trust twin: "are you there" / "are you safe" |
+| `trust.presence` / `trust.safety` | 0..1 | Trust twin. `presence` drives cold-shoulder sensitivity; `safety` is a configurable state axis — rules can write it and host agents may consume it, but no built-in behavior reads it yet |
 
 Every axis has its own decay half-life (arousal ~30min, pleasure ~6h, relationship axes ~days) and its own baseline — moods regress toward *temperament*, not toward zero.
 
@@ -53,6 +53,14 @@ Copy `config.example.json` to `emotion_config.json` (gitignored) next to the eng
 - `baseline` — the temperament your companion regresses to. Anxious? Set arousal high. Clingy? Set attachment high.
 - `lambda` — the breathing rhythm: how fast each axis settles. Invalid values fall back to defaults; out-of-range baselines are clamped.
 - `rules` — keyword → delta table, replaces the shipped example table entirely. Multi-axis deltas, trust sub-deltas, and cooldown semantics all work the same.
+
+`emotion_config.json` is gitignored, and the bundled server refuses to serve it over HTTP — your companion's personality is not for commit, and not for the local network either.
+
+### The rules layer is a fast path, not understanding
+
+Keyword rules are deterministic substring matching, first-hit-wins, with carrier-word guards and a negation check for positive rules. That is the point: zero latency, zero cost, no hallucination. It is not semantic understanding — "I'm not breaking up with you" may still hit a "breakup" rule. Treat this layer as the safety net it was designed to be, and layer an LLM judge on top when you need nuance.
+
+One more runtime boundary, stated plainly: keyword cooldowns and the self-source daily budget live in process memory and reset on restart. Fine for a single resident process; if you ever run multiple processes, externalize that state first.
 
 One layer we deliberately do **not** configure for you: the first-person mood sentences in `engine.py::_describe_mood`. That is the most *personality*-dense layer of the engine — read the nine example tiers, then rewrite them in your companion's voice.
 

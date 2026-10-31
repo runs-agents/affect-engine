@@ -16,6 +16,7 @@ server.py — Live2D 渲染 + 情绪直驱服务
 from __future__ import annotations
 
 import json
+import os
 import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -62,6 +63,15 @@ class Handler(SimpleHTTPRequestHandler):
         super().__init__(*args, directory=str(ROOT), **kwargs)
 
     def do_GET(self):
+        # 敏感文件守卫：用户配置/状态/锁文件/.git 不走静态服务——
+        # 静态目录是源码目录，个人配置不能通过 HTTP 被读走。
+        fs_path = Path(self.translate_path(self.path))
+        name = fs_path.name
+        if (name in ("emotion_config.json", "emotion_state.json")
+                or name.endswith(".lock")
+                or ".git" in fs_path.parts):
+            self.send_error(403, "Forbidden")
+            return
         # 情绪参数端点
         if self.path.startswith("/api/emotion"):
             self._handle_emotion()
@@ -86,9 +96,11 @@ class Handler(SimpleHTTPRequestHandler):
                     "mood": eng.mood_text(),
                     "mood_label": eng.mood_label(),
                     "period": eng.period_text(),
-                    "pad": eng.state.get_pad(),
-                    "possessiveness": eng.state.get_possessiveness(),
                 }
+                # 审计开关：默认不暴露内部数值（与「数值不出引擎」设计原则一致）
+                if os.environ.get("EMOTION_PAD_INJECT") == "1":
+                    payload["pad"] = eng.state.get_pad()
+                    payload["possessiveness"] = eng.state.get_possessiveness()
             body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -109,8 +121,14 @@ class Handler(SimpleHTTPRequestHandler):
             self.wfile.write(body)
 
     def log_message(self, format, *args):
-        # 静默静态文件日志，只打印情绪端点
-        if "/api/emotion" in (args[0] if args else ""):
+        # 静默静态文件日志，只打印情绪端点。
+        # 注意 send_error 走 log_error 时 args 可能是 (403, "Forbidden") 这类
+        # 非字符串形态——先安全格式化再判，防 TypeError（冒烟实测抓到）。
+        try:
+            msg = format % args
+        except (TypeError, ValueError):
+            msg = str(args)
+        if "/api/emotion" in msg:
             super().log_message(format, *args)
 
 
